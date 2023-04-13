@@ -1,5 +1,6 @@
 package ru.netology.statsview.ui
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -8,6 +9,7 @@ import android.graphics.PointF
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
+import android.view.animation.LinearInterpolator
 import androidx.core.content.withStyledAttributes
 
 import ru.netology.statsview.utils.AndroidUtils
@@ -48,7 +50,7 @@ class StatsView @JvmOverloads constructor(
             field = value
             calculatePercentages()
             invalidate()
-
+            update()
         }
     private var percentages: List<Float> = emptyList()
     private fun calculatePercentages() {
@@ -89,11 +91,14 @@ class StatsView @JvmOverloads constructor(
         )
     }
 
+    private var progress = 0F
+    private var valueAnimator: ValueAnimator? = null
     override fun onDraw(canvas: Canvas) {
         if (data.isEmpty()) {
             return
         }
-        var startAngle = -90F
+        var startAngle = -90F + 360F * progress
+
         percentages.forEachIndexed { index, percentage ->
             var angle = percentage * 3.6F
 
@@ -101,8 +106,7 @@ class StatsView @JvmOverloads constructor(
 
 
 
-
-            canvas.drawArc(oval, startAngle, angle, false, paint)
+            canvas.drawArc(oval, startAngle, angle * progress, false, paint)
 
             startAngle += angle
             if (index == percentages.size - 1) {
@@ -121,4 +125,22 @@ class StatsView @JvmOverloads constructor(
     }
 
     private fun generateRandomColor() = Random.nextInt(0xFF000000.toInt(), 0xFFFFFFFF.toInt())
+    private fun update() {
+        valueAnimator?.let {
+            it.removeAllListeners()
+            it.cancel()
+        }
+        progress = 0F
+        valueAnimator = ValueAnimator.ofFloat(0F, 1F).apply {
+            addUpdateListener { anim ->
+                progress = anim.animatedValue as Float
+                invalidate()
+            }
+            duration = 5000
+            interpolator = LinearInterpolator()
+
+
+        }.also { it.start() }
+    }
+
 }
